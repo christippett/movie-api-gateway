@@ -6,7 +6,7 @@ dependencies:
   override:
     - docker info
     # login so we can access private repo
-    - docker login -u $DOCKER_USER -p $DOCKER_PASS
+    - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
     # pull image from registry to cache docker layers for quicker rebuilds
     - docker pull ctippett/ticket-bounty-movie-api:latest
     # build new image
