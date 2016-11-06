@@ -7,6 +7,9 @@ import requests
 from .tmdb import TMDbAPI
 
 
+logger = logging.getLogger(__name__)
+
+
 class GoogleAPIError(ConnectionError):
     pass
 
@@ -26,9 +29,9 @@ class MovieAPI(object):
         self.google_key = google_key
         self.google_cx = google_cx
         self.tmdb_key = tmdb_key
-        self.logger = logging.getLogger(__name__)
 
     def get_omdb_data(self, imdb_id: str) -> Dict:
+        logger.info('Getting OMDB data')
         omdb_params = {
             'type': 'movie',
             'r': 'json',
@@ -45,6 +48,7 @@ class MovieAPI(object):
         return omdb_data
 
     def get_tmdb_data(self, imdb_id: str) -> Dict:
+        logger.info('Getting TMDb data')
         tmdb = TMDbAPI(api_key=self.tmdb_key)
         r = tmdb.find_movie(imdb_id)
         movie_results = r.get('movie_results')
@@ -64,9 +68,6 @@ class MovieAPI(object):
                 image_sizes=tmdb.configuration['images']['backdrop_sizes'])
 
             return movie
-            # tmdb_id = movie_results[0]['id']
-            # return tmdb.get_movie(
-            #     tmdb_id, append_to_response='release_dates,videos')
         else:
             return {}
 
@@ -78,6 +79,7 @@ class MovieAPI(object):
         return images
 
     def imdb_google_search(self, search_term: str, max_results: int=10) -> Dict:
+        logger.info("Searching Google for movie's IMDB page")
         google_search_params = {
             'key': self.google_key,
             'cx': self.google_cx,
@@ -91,7 +93,7 @@ class MovieAPI(object):
         if len(google_results) == 0:
             log_message = "Google IMDb search could not find any results" \
                 " for the search term: %s" % search_term
-            self.logger.warning(log_message)
+            logger.warning(log_message)
             return {}  # return if empty response
 
         if 'error' in google_results:
@@ -127,6 +129,6 @@ class MovieAPI(object):
                 }
                 results.append(movie)
         except GoogleAPIError as e:
-            self.logger.error(str(e))
+            logger.error(str(e))
 
         return results
