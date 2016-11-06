@@ -14,7 +14,7 @@ TMDB_KEY = os.getenv('TMDB_KEY')
 app = Flask(__name__)
 
 # Configure logging
-handler = logging.StreamHandler(sys.stdout)
+handler = logging.StreamHandler()
 handler.setLevel(logging.NOTSET)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
