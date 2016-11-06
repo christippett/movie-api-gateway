@@ -1,31 +1,43 @@
-from functools import wraps
+import os
 
-from flask import Flask, abort, jsonify, make_response, request  # type: ignore
+from flask import Flask, jsonify, request, abort  # type: ignore
 from werkzeug.exceptions import HTTPException  # type: ignore
 
 from movie_api import MovieAPI
 
 app = Flask(__name__)
 
+GOOGLE_KEY = os.getenv('GOOGLE_KEY')
+GOOGLE_CX = os.getenv('GOOGLE_CX')
+TMDB_KEY = os.getenv('TMDB_KEY')
+
 
 @app.errorhandler(Exception)
-def not_found(error):  # pylint: disable=W0613
+@app.errorhandler(404)
+@app.errorhandler(500)
+def error_view(error):
     code = 500 if not isinstance(error, HTTPException) else error.code
     if request.is_json:
         return jsonify({
             'status_code': error.code,
-            'message': str(error),
-            'description': error.description
-        }), error.code
+            'response': str(error),
+            'error': error.description
+        }), code
     raise error.get_response()
 
 
 @app.route('/api/search_movie', methods=['GET'])
 def get_tasks():
+    # assign GET parameters
     q = request.args.get('q')
-    google = MovieAPI(google_key='AIzaSyDnB2uWxHZ9CKVCR6lzXJGynvVcxJFyIaM',
-                      google_cx='015622078606278990278:5t6sqmzziik',
-                      tmdb_key='2833b819ebafbb620ae46298a22abae8')
+    google_key = request.args.get('google_key', GOOGLE_KEY)
+    google_cx = request.args.get('google_cx', GOOGLE_CX)
+    tmdb_key = request.args.get('tmdb_key', TMDB_KEY)
+    # configure API
+    google = MovieAPI(google_key=google_key,
+                      google_cx=google_cx,
+                      tmdb_key=tmdb_key)
+    # find movie based on its title
     imdb_id = google.find_movies(q)
     return jsonify({
         'data': imdb_id
