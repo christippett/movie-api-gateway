@@ -8,7 +8,7 @@ dependencies:
     # login so we can access private repo
     - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
     # pull image from registry to cache docker layers for quicker rebuilds
-    - docker pull ctippett/ticket-bounty-movie-api:latest
+    - docker pull ctippett/ticket-bounty-movie-api:latest || true
     # build new image
     - docker build -t ticket-bounty-movie-api .
 
