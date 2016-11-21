@@ -2,7 +2,7 @@ import logging
 import os
 import sys
 
-from flask import Flask, jsonify, request  # type: ignore
+from flask import Flask, jsonify, request, abort  # type: ignore
 from werkzeug.exceptions import HTTPException  # type: ignore
 
 from .movie_api import MovieAPI
@@ -39,17 +39,27 @@ def get_tasks():
     # get search term
     q = request.args.get('q')
     app.logger.info('Searching for "%s"' % q)
+
     # get API keys
     google_key = request.args.get('google_key', GOOGLE_KEY)
     google_cx = request.args.get('google_cx', GOOGLE_CX)
     tmdb_key = request.args.get('tmdb_key', TMDB_KEY)
+
     # configure API
     google = MovieAPI(google_key=google_key,
                       google_cx=google_cx,
                       tmdb_key=tmdb_key)
+
     # find movie based on its title
-    imdb_id = google.find_movies(q)
+    movie_results = google.find_movies(q)
+    if len(movie_results) == 0:
+        app.logger.warning('No results found for search term "%s"' % q)
+        response = 'No results found for search term "%s"' % q
+    else:
+        response = 'Success'
+
     app.logger.info('Finished fetching data for "%s"' % q)
     return jsonify({
-        'data': imdb_id
+        'data': movie_results,
+        'response': response
     })
