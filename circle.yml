@@ -16,7 +16,7 @@ dependencies:
 
 test:
   override:
-    - dev_appserver.py app.yaml
+    - dev_appserver.py app.yaml > /dev/null &
     - curl -fs --retry 10 --retry-delay 5 -v http://localhost:8080/_ah/health
 
 deployment:
