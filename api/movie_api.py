@@ -1,8 +1,9 @@
 import logging
 import re
-from typing import List, Dict
+import os
 
 import requests
+import requests_toolbelt.adapters.appengine
 
 from .tmdb import TMDbAPI
 
@@ -10,11 +11,16 @@ from .tmdb import TMDbAPI
 logger = logging.getLogger(__name__)
 
 
-class GoogleAPIError(ConnectionError):
+if os.environ.get('APP_ENV', 'dev') == 'google-cloud':
+    # Use the App Engine Requests adapter. This makes sure that Requests uses URLFetch
+    requests_toolbelt.adapters.appengine.monkeypatch()
+
+
+class GoogleAPIError(Exception):
     pass
 
 
-class OMDBAPIError(ConnectionError):
+class OMDBAPIError(Exception):
     pass
 
 
@@ -25,12 +31,12 @@ class MovieAPI(object):
     omdb_url = 'http://www.omdbapi.com/'
     tmdb_url = 'http://api.themoviedb.org/3/'
 
-    def __init__(self, google_key: str, google_cx: str, tmdb_key: str) -> None:
+    def __init__(self, google_key, google_cx, tmdb_key):
         self.google_key = google_key
         self.google_cx = google_cx
         self.tmdb_key = tmdb_key
 
-    def get_omdb_data(self, imdb_id: str) -> Dict:
+    def get_omdb_data(self, imdb_id):
         logger.info('Getting OMDB data')
         omdb_params = {
             'type': 'movie',
@@ -47,7 +53,7 @@ class MovieAPI(object):
 
         return omdb_data
 
-    def get_tmdb_data(self, imdb_id: str) -> Dict:
+    def get_tmdb_data(self, imdb_id):
         logger.info('Getting TMDb data')
         tmdb = TMDbAPI(api_key=self.tmdb_key)
         r = tmdb.find_movie(imdb_id)
@@ -71,14 +77,14 @@ class MovieAPI(object):
         else:
             return {}
 
-    def get_tmdb_images(self, base_url: str, image_path: str, image_sizes: List) -> Dict:
+    def get_tmdb_images(self, base_url, image_path, image_sizes):
         images = {}
         if image_path:
             for size in image_sizes:
                 images[size] = base_url + size + image_path
         return images
 
-    def imdb_google_search(self, search_term: str, max_results: int=10) -> Dict:
+    def imdb_google_search(self, search_term, max_results=10):
         logger.info("Searching Google for movie's IMDB page")
         google_search_params = {
             'key': self.google_key,
@@ -102,7 +108,7 @@ class MovieAPI(object):
 
         return google_results
 
-    def find_movies(self, movie_title: str, max_results: int=1) -> List:
+    def find_movies(self, movie_title, max_results=1):
         """
         Return IMDB ID if found using Google search
         """

@@ -1,4 +1,12 @@
+import os
+
 import requests
+import requests_toolbelt.adapters.appengine
+
+
+if os.environ.get('APP_ENV', 'dev') == 'google-cloud':
+    # Use the App Engine Requests adapter. This makes sure that Requests uses URLFetch
+    requests_toolbelt.adapters.appengine.monkeypatch()
 
 
 class TMDbAPI(object):

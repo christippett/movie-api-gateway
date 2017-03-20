@@ -4,13 +4,14 @@ machine:
 
 dependencies:
   override:
-    - docker info
-    # login so we can access private repo
-    - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-    # pull image from registry to cache docker layers for quicker rebuilds
-    - docker pull ctippett/ticket-bounty-movie-api:latest || true
-    # build new image
-    - docker build -t ticket-bounty-movie-api .
+    # Set up Google Cloud CLI
+    - echo $GCLOUD_SERVICE_KEY | base64 --decode --ignore-garbage > ${HOME}/gcloud-service-key.json
+    - sudo /opt/google-cloud-sdk/bin/gcloud --quiet components update
+    - sudo /opt/google-cloud-sdk/bin/gcloud auth activate-service-account --key-file ${HOME}/gcloud-service-key.json
+    - sudo /opt/google-cloud-sdk/bin/gcloud config set project $GCLOUD_PROJECT
+    # Download packages
+    - pip install -t lib -r requirements.txt
+
 
 test:
   override:
@@ -19,14 +20,7 @@ test:
     - curl --retry 10 --retry-delay 5 -v http://localhost:5000 # test app is running on port 5000
 
 deployment:
-  dockerhub:
+  production:
     branch: master
     commands:
-      # Push the same image twice, once with the commit hash as the tag, and once with
-      # 'latest' as the tag. 'latest' will always refer to the last image that was
-      # built, since the next time this script is run, it'll get overridden. The
-      # commit hash, however, is a constant reference to this image.
-      - docker tag -f ticket-bounty-movie-api ctippett/ticket-bounty-movie-api:$CIRCLE_SHA1
-      - docker push ctippett/ticket-bounty-movie-api:$CIRCLE_SHA1
-      - docker tag -f ticket-bounty-movie-api ctippett/ticket-bounty-movie-api:latest
-      - docker push ctippett/ticket-bounty-movie-api:latest
+      - sudo /opt/google-cloud-sdk/bin/gcloud --quiet app deploy
